@@ -23,4 +23,3 @@ class HelloWorldController {
                "</div>";
     }
 }
-
