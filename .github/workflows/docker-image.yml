@@ -47,6 +47,6 @@ jobs:
             echo '--- Removing old container ---' &&
             docker rm bibit || true &&
 
-            echo '--- Running new container on port 9080 ---' &&
-            docker run -d --name bibit -p 8080:8080 ${{ secrets.DOCKER_USERNAME }}/bibit:latest
+            echo '--- Running new container on port 8888 ---' &&
+            docker run -d --name bibit -p 8888:8080 ${{ secrets.DOCKER_USERNAME }}/bibit:latest
           "
