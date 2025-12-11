@@ -1,18 +1,52 @@
-name: Docker Image CI
+name: Docker CI/CD
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
-
-  build:
-
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Docker login
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Docker build
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/bibit:latest .
+
+      - name: Docker push
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/bibit:latest
+
+      # -------------------------------
+      # SSH Deploy Section
+      # -------------------------------
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf "Host deploy\n  HostName ${{ secrets.SSH_HOST }}\n  User ${{ secrets.SSH_USER }}\n  Port ${{ secrets.SSH_PORT }}\n  IdentityFile ~/.ssh/id_ed25519\n  StrictHostKeyChecking no\n" > ~/.ssh/config
+
+      - name: Deploy to Server
+        run: |
+          ssh deploy "
+            echo '--- Pulling latest Docker image ---' &&
+            docker pull ${{ secrets.DOCKER_USERNAME }}/bibit:latest 
+          "
+      - name : Stop Container
+        run: |
+          ssh deploy "
+            echo '--- Stopping old container ---' &&
+            docker stop bibit || true &&
+
+            echo '--- Removing old container ---' &&
+            docker rm bibit || true &&
+
+            echo '--- Running new container on port 9080 ---' &&
+            docker run -d --name bibit -p 9080:8080 ${{ secrets.DOCKER_USERNAME }}/bibit:latest
+          "
