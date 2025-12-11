@@ -48,5 +48,5 @@ jobs:
             docker rm bibit || true &&
 
             echo '--- Running new container on port 9080 ---' &&
-            docker run -d --name bibit -p 9080:8080 ${{ secrets.DOCKER_USERNAME }}/bibit:latest
+            docker run -d --name bibit -p 8080:8080 ${{ secrets.DOCKER_USERNAME }}/bibit:latest
           "
